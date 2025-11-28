@@ -22,7 +22,7 @@ public class Killaura extends Module {
     public Setting<Boolean> targetPhantom = register(new Setting<>("Phantom", false));
 
     public Killaura() {
-        super("Killaura", "Automatically attacks entities", Category.COMBAT, true, false, false);
+        super("Killaura", "Automatically attacks entities", Category.Combat, true, false, false);
     }
 
     @Override
