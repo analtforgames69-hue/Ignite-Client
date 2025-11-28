@@ -24,8 +24,19 @@ public class Killaura extends Module {
         super("Killaura", "Automatically attacks entities", Category.COMBAT, true, false, false);
 
         // Initialize the EntityListButton with available entity types
-        List<String> entities = List.of("Player", "Phantom"); // Add more entity types if needed
-        this.entityListButton = new EntityListButton("Target Entities", entities, this);
+           // Register settings
+        targetPlayers = register(new Setting<>("Players", true));
+        targetPhantoms = register(new Setting<>("Phantoms", false));
+
+        // Initialize buttons
+        entityButtons.add(new BooleanButton("Players", targetPlayers));
+        entityButtons.add(new BooleanButton("Phantoms", targetPhantoms));
+        
+    public List<BooleanButton> getEntityButtons() {
+        return entityButtons;
+        }
+
+    
     }
 
     @Override
