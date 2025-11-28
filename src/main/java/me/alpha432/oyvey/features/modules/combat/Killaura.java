@@ -2,10 +2,12 @@ package me.alpha432.oyvey.features.modules.combat;
 
 import me.alpha432.oyvey.features.modules.Module;
 import me.alpha432.oyvey.features.settings.Setting;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.util.math.Box;
 import net.minecraft.world.World;
-import net.minecraft.client.network.ClientPlayerEntity;
+
+import java.util.List;
 
 public class Killaura extends Module {
 
@@ -13,55 +15,46 @@ public class Killaura extends Module {
     public Setting<Boolean> rotate = register(new Setting<>("Rotate", true));
 
     public Killaura() {
-        super("Killaura", "Automatically attacks entities around you", Category.COMBAT, true, false, false);
+        super("Killaura", "Attacks entities automatically", Category.COMBAT, true, false, false);
     }
 
     @Override
     public void onTick() {
-        ClientPlayerEntity player = mc.player;
+        PlayerEntity player = mc.player;
         World world = mc.world;
 
         if (player == null || world == null) return;
 
-        for (Entity entity : world.getEntities()) {
-            // Skip non-living entities and yourself
-            if (!(entity instanceof LivingEntity living) || entity == player) continue;
+        // Create a box around player for attack range
+        Box attackBox = player.getBoundingBox().expand(range.getValue());
 
-            // Skip dead entities
-            if (!living.isAlive()) continue;
+        // Get all living entities in range except player
+        List<LivingEntity> entities = world.getEntitiesByClass(LivingEntity.class, attackBox, e -> e != player);
 
-            // Check distance
-            if (player.squaredDistanceTo(entity) > range.getValue() * range.getValue()) continue;
+        for (LivingEntity target : entities) {
+            if (!target.isAlive()) continue;
 
-            // Rotate towards target if enabled
-            if (rotate.getValue()) {
-                faceEntity(living);
-            }
+            if (rotate.getValue()) faceEntity(target);
 
-            // Attack only if the attack cooldown is ready
+            // Attack when attack cooldown is ready
             if (player.getAttackCooldownProgress(0.5f) >= 1.0f) {
-                player.attack(living);
+                player.attack(target);
                 player.swingHand(player.getActiveHand());
             }
         }
     }
 
-    // Simple rotation helper
     private void faceEntity(LivingEntity entity) {
+        // Simplified rotation towards entity
         double dx = entity.getX() - mc.player.getX();
         double dz = entity.getZ() - mc.player.getZ();
-        double dy = entity.getY() + entity.getEyeHeight(mc.player.getPose()) - (mc.player.getY() + mc.player.getEyeHeight(mc.player.getPose()));
-        double distXZ = Math.sqrt(dx * dx + dz * dz);
-
         float yaw = (float) Math.toDegrees(Math.atan2(dz, dx)) - 90;
-        float pitch = (float) -Math.toDegrees(Math.atan2(dy, distXZ));
-
         mc.player.setYaw(yaw);
-        mc.player.setPitch(pitch);
+        mc.player.setPitch((float) -Math.toDegrees(Math.atan2(entity.getY() - mc.player.getEyeY(), Math.sqrt(dx*dx + dz*dz))));
     }
 
     @Override
     public String getDisplayInfo() {
-        return "Aura";
+        return "Packet";
     }
 }
