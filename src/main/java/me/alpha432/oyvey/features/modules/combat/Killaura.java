@@ -1,67 +1,40 @@
 package me.alpha432.oyvey.features.modules.combat;
 
-import me.alpha432.oyvey.OyVey;
 import me.alpha432.oyvey.features.modules.Module;
-import me.alpha432.oyvey.features.settings.Setting;
+import me.alpha432.oyvey.features.gui.items.buttons.BooleanButton;
 import me.alpha432.oyvey.features.gui.items.buttons.EntityListButton;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.Hand;
+import me.alpha432.oyvey.features.settings.Setting;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Killaura extends Module {
-    
-    // Settings
-    public Setting<Float> range = register(new Setting<>("Range", 5.0f, 0.1f, 10.0f));
-    public Setting<Boolean> rotate = register(new Setting<>("Rotate", true));
-    public Setting<Boolean> targetPlayers = register(new Setting<>("Players", true));
-    public Setting<Boolean> targetPhantoms = register(new Setting<>("Phantoms", false));
 
-    // Entity selection button
-    private EntityListButton entityListButton;
+    // Settings (replace Setting with your correct Settings class if needed)
+    public Setting<Boolean> targetPlayers;
+    public Setting<Boolean> targetPhantoms;
+
+    // List of BooleanButtons for the entity list
+    private final List<BooleanButton> entityButtons = new ArrayList<>();
+    public EntityListButton entityListButton;
 
     public Killaura() {
-        super("Killaura", "Automatically attacks entities", Category.COMBAT, true, false, false);
+        super("Killaura", "Automatically attacks entities around you", Module.Category.COMBAT);
 
-        // Initialize the EntityListButton with available entity types
-           // Register settings
+        // Initialize settings
         targetPlayers = register(new Setting<>("Players", true));
         targetPhantoms = register(new Setting<>("Phantoms", false));
 
-        // Initialize buttons
+        // Initialize entity buttons
         entityButtons.add(new BooleanButton("Players", targetPlayers));
         entityButtons.add(new BooleanButton("Phantoms", targetPhantoms));
-        
+
+        // Initialize entity list button
+        this.entityListButton = new EntityListButton("Target Entities", this);
+    }
+
+    // Getter for entity buttons
     public List<BooleanButton> getEntityButtons() {
         return entityButtons;
-        }
-
-    
-    }
-
-    @Override
-    public void onUpdate() {
-        if (mc.player == null || mc.world == null) return;
-
-        for (Entity entity : mc.world.getEntities()) {
-            if (entity == mc.player) continue;
-            
-            String entityName = entity.getType().getName().getString();
-
-            // Skip entities based on settings
-            if (entityName.equalsIgnoreCase("player") && !targetPlayers.getValue()) continue;
-            if (entityName.equalsIgnoreCase("phantom") && !targetPhantoms.getValue()) continue;
-
-            if (mc.player.squaredDistanceTo(entity) > range.getValue() * range.getValue()) continue;
-
-            // Attack entity
-            mc.player.attack(entity);
-            mc.player.swingHand(Hand.MAIN_HAND);
-        }
-    }
-
-    // Getter for the EntityListButton (so the GUI can access it)
-    public EntityListButton getEntityListButton() {
-        return entityListButton;
     }
 }
