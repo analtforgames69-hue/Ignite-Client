@@ -1,7 +1,6 @@
 package me.alpha432.oyvey.features.gui.items.buttons;
 
 import me.alpha432.oyvey.features.modules.combat.Killaura;
-import me.alpha432.oyvey.features.settings.Setting;
 import me.alpha432.oyvey.util.render.RenderUtil;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -21,20 +20,20 @@ public class EntityListButton extends Button {
 
     @Override
     public void drawScreen(DrawContext context, int mouseX, int mouseY, float partialTicks) {
-        // Draw the main button
-        RenderUtil.rect(context.getMatrices(), this.x, this.y, this.x + (float) this.width,
-                this.y + (float) this.height - 0.5f,
+        // Draw main button
+        RenderUtil.rect(context.getMatrices(), this.getX(), this.getY(),
+                this.getX() + (float) this.getWidth(), this.getY() + (float) this.getHeight() - 0.5f,
                 this.isHovering(mouseX, mouseY) ? 0x77111111 : 0x55111111);
-        drawString(this.getName(), this.x + 2.3f, this.y - 2.0f, -1);
+        drawString(this.getName(), this.getX() + 2.3f, this.getY() - 2.0f, -1);
 
         // Draw extended entity toggles
         if (extended) {
             List<BooleanButton> entityButtons = module.getEntityButtons();
-            float offsetY = this.y + this.height;
+            float offsetY = this.getY() + this.getHeight();
             for (BooleanButton btn : entityButtons) {
-                btn.x = this.x;
-                btn.y = offsetY;
-                btn.width = this.width;
+                btn.setX(this.getX());
+                btn.setY(offsetY);
+                btn.setWidth(this.getWidth());
                 btn.drawScreen(context, mouseX, mouseY, partialTicks);
                 offsetY += btn.getHeight();
             }
