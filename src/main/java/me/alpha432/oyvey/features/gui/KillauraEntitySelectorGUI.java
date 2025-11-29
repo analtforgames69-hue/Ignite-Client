@@ -1,9 +1,10 @@
 package me.alpha432.oyvey.features.gui;
 
 import me.alpha432.oyvey.features.modules.combat.TargetType;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.util.math.MatrixStack;
-
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
 import java.util.*;
 import java.util.stream.Collectors;
 
