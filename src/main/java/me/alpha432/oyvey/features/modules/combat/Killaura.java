@@ -1,4 +1,7 @@
 package me.alpha432.oyvey.features.modules.combat;
+
+import me.alpha432.oyvey.features.modules.Module;
+import me.alpha432.oyvey.features.gui.KillauraEntitySelectorGUI;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
@@ -35,7 +38,13 @@ public class Killaura extends Module {
 
     private TargetType getEntityType(net.minecraft.entity.Entity entity) {
         if (entity instanceof PlayerEntity) return TargetType.PLAYER;
-        return null; // Expand this mapping for other mobs if needed
+        // Map other mobs
+        String name = entity.getType().toString().toUpperCase();
+        try {
+            return TargetType.valueOf(name);
+        } catch (IllegalArgumentException e) {
+            return null; // Not in enum
+        }
     }
 
     private void rotateHeadSmoothly(ClientPlayerEntity player, net.minecraft.entity.Entity target) {
@@ -46,6 +55,7 @@ public class Killaura extends Module {
         float yawDelta = wrapDegrees(angles[0] - player.getYaw());
         float pitchDelta = wrapDegrees(angles[1] - player.getPitch());
 
+        // Rotate model smoothly without changing camera
         player.setYaw(player.getYaw() + Math.signum(yawDelta) * Math.min(rotationSpeed, Math.abs(yawDelta)));
         player.setPitch(player.getPitch() + Math.signum(pitchDelta) * Math.min(rotationSpeed, Math.abs(pitchDelta)));
     }
