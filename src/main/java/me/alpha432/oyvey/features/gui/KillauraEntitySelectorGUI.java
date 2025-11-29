@@ -1,22 +1,21 @@
 package me.alpha432.oyvey.features.gui;
 
 import me.alpha432.oyvey.features.modules.combat.TargetType;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.font.TextRenderer;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.text.Text;
-import net.minecraft.client.render.VertexConsumerProvider;
-import net.minecraft.client.render.TextLayerType;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Text;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-@net.fabricmc.api.EnvType(net.fabricmc.api.EnvType.CLIENT)
+@Environment(EnvType.CLIENT)
 public class KillauraEntitySelectorGUI {
 
     private final Map<TargetType, Boolean> targetToggles = new EnumMap<>(TargetType.class);
     private String searchQuery = "";
-    private final MinecraftClient mc = MinecraftClient.getInstance();
+    private final Minecraft mc = Minecraft.getInstance();
 
     public KillauraEntitySelectorGUI() {
         for (TargetType type : TargetType.values()) {
@@ -42,28 +41,27 @@ public class KillauraEntitySelectorGUI {
                 .collect(Collectors.toList());
     }
 
-    public void render(MatrixStack matrices, int mouseX, int mouseY) {
+    /**
+     * Renders the GUI using GuiGraphics (new in 1.20+ / 1.21.5)
+     */
+    public void render(GuiGraphics graphics, int mouseX, int mouseY) {
         int y = 20;
 
-        TextRenderer textRenderer = mc.textRenderer;
-        VertexConsumerProvider.Immediate vertexConsumers = mc.getBufferBuilders().getEntityVertexConsumers();
-
         // Draw search query
-        textRenderer.draw(matrices, Text.of("Search: " + searchQuery), 10f, 10f, 0xFFFFFF, false,
-                matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+        graphics.drawString(mc.font, Text.literal("Search: " + searchQuery), 10, 10, 0xFFFFFF, false);
 
-        // Draw target types
+        // Draw each target toggle
         for (TargetType type : getVisibleTargets()) {
             boolean enabled = isEnabled(type);
-            String labelStr = (enabled ? "[X] " : "[ ] ") + type.name();
-            textRenderer.draw(matrices, Text.of(labelStr), 10f, (float)y, 0xFFFFFF, false,
-                    matrices.peek().getPositionMatrix(), vertexConsumers, TextLayerType.NORMAL, 0, 15728880);
+            String label = (enabled ? "[X] " : "[ ] ") + type.name();
+            graphics.drawString(mc.font, Text.literal(label), 10, y, 0xFFFFFF, false);
             y += 12;
         }
-
-        vertexConsumers.draw(); // flush the buffer
     }
 
+    /**
+     * Handles click events on the GUI toggles
+     */
     public void handleClick(double mouseX, double mouseY) {
         int y = 20;
         for (TargetType type : getVisibleTargets()) {
