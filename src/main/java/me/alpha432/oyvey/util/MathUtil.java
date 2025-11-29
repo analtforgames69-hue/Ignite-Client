@@ -51,30 +51,7 @@ public class MathUtil implements Util {
     }
 
     public static double wrapDegrees(double value) {
-        value = value % 360.0;
-        if (value >= 180.0) value -= 360.0;
-        if (value < -180.0) value += 360.0;
-        return value;
-    }
-
-    // Smooth rotation for Killaura
-    public static float smoothRotation(float current, float target, float speed) {
-        float delta = (float) wrapDegrees(target - current);
-        if (delta > speed) delta = speed;
-        if (delta < -speed) delta = -speed;
-        return current + delta;
-    }
-
-    // Calculate yaw/pitch from one entity to another
-    public static float[] calculateLookAt(double x, double y, double z, Entity fromEntity) {
-        double diffX = x - fromEntity.getX();
-        double diffY = y - (fromEntity.getY() + fromEntity.getEyeHeight(fromEntity.getPose()));
-        double diffZ = z - fromEntity.getZ();
-        double dist = Math.sqrt(diffX * diffX + diffZ * diffZ);
-
-        float yaw = (float) Math.toDegrees(Math.atan2(diffZ, diffX)) - 90f;
-        float pitch = (float) -Math.toDegrees(Math.atan2(diffY, dist));
-        return new float[]{yaw, pitch};
+        return MathHelper.wrapDegrees(value);
     }
 
     public static Vec3d roundVec(Vec3d vec3d, int places) {
@@ -111,82 +88,34 @@ public class MathUtil implements Util {
     }
 
     public static double radToDeg(double rad) {
-        return rad * 57.29578f;
+        return rad * (180 / Math.PI);
     }
 
     public static double degToRad(double deg) {
-        return deg * 0.01745329238474369;
-    }
-
-    public static double getIncremental(double val, double inc) {
-        double one = 1.0 / inc;
-        return (double) Math.round(val * one) / one;
-    }
-
-    public static double[] directionSpeed(double speed) {
-        float forward = MathUtil.mc.player.input.getMovementInput().y;
-        float side = MathUtil.mc.player.input.getMovementInput().x;
-        float yaw = MathUtil.mc.player.lastYaw + (MathUtil.mc.player.getYaw() - MathUtil.mc.player.lastYaw) * mc.getRenderTickCounter().getTickProgress(false);
-        if (forward != 0.0f) {
-            if (side > 0.0f) {
-                yaw += (float) (forward > 0.0f ? -45 : 45);
-            } else if (side < 0.0f) {
-                yaw += (float) (forward > 0.0f ? 45 : -45);
-            }
-            side = 0.0f;
-            if (forward > 0.0f) {
-                forward = 1.0f;
-            } else if (forward < 0.0f) {
-                forward = -1.0f;
-            }
-        }
-        double sin = Math.sin(Math.toRadians(yaw + 90.0f));
-        double cos = Math.cos(Math.toRadians(yaw + 90.0f));
-        double posX = (double) forward * speed * cos + (double) side * speed * sin;
-        double posZ = (double) forward * speed * sin - (double) side * speed * cos;
-        return new double[]{posX, posZ};
-    }
-
-    public static List<Vec3d> getBlockBlocks(Entity entity) {
-        ArrayList<Vec3d> vec3ds = new ArrayList<>();
-        Box bb = entity.getBoundingBox();
-        double y = entity.getY();
-        double minX = MathUtil.round(bb.minX, 0);
-        double minZ = MathUtil.round(bb.minZ, 0);
-        double maxX = MathUtil.round(bb.maxX, 0);
-        double maxZ = MathUtil.round(bb.maxZ, 0);
-        if (minX != maxX) {
-            vec3ds.add(new Vec3d(minX, y, minZ));
-            vec3ds.add(new Vec3d(maxX, y, minZ));
-            if (minZ != maxZ) {
-                vec3ds.add(new Vec3d(minX, y, maxZ));
-                vec3ds.add(new Vec3d(maxX, y, maxZ));
-                return vec3ds;
-            }
-        } else if (minZ != maxZ) {
-            vec3ds.add(new Vec3d(minX, y, minZ));
-            vec3ds.add(new Vec3d(minX, y, maxZ));
-            return vec3ds;
-        }
-        vec3ds.add(entity.getPos());
-        return vec3ds;
-    }
-
-    public static boolean areVec3dsAligned(Vec3d vec3d1, Vec3d vec3d2) {
-        return MathUtil.areVec3dsAlignedRetarded(vec3d1, vec3d2);
-    }
-
-    public static boolean areVec3dsAlignedRetarded(Vec3d vec3d1, Vec3d vec3d2) {
-        BlockPos pos1 = BlockPos.ofFloored(vec3d1);
-        BlockPos pos2 = BlockPos.ofFloored(vec3d2.x, vec3d1.y, vec3d2.z);
-        return pos1.equals(pos2);
+        return deg * (Math.PI / 180.0);
     }
 
     public static float[] calcAngle(Vec3d from, Vec3d to) {
         double difX = to.x - from.x;
-        double difY = (to.y - from.y) * -1.0;
+        double difY = to.y - from.y;
         double difZ = to.z - from.z;
         double dist = Math.sqrt(difX * difX + difZ * difZ);
-        return new float[]{(float) MathHelper.wrapDegrees(Math.toDegrees(Math.atan2(difZ, difX)) - 90.0), (float) MathHelper.wrapDegrees(Math.toDegrees(Math.atan2(difY, dist)))};
+        float yaw = (float) MathHelper.wrapDegrees(Math.toDegrees(Math.atan2(difZ, difX)) - 90.0);
+        float pitch = (float) MathHelper.wrapDegrees(-Math.toDegrees(Math.atan2(difY, dist)));
+        return new float[]{yaw, pitch};
+    }
+
+    public static double[] directionSpeed(double speed, float forward, float side, float yaw) {
+        if (forward != 0.0f) {
+            if (side > 0.0f) yaw += (forward > 0.0f ? -45 : 45);
+            else if (side < 0.0f) yaw += (forward > 0.0f ? 45 : -45);
+            side = 0.0f;
+            forward = forward > 0.0f ? 1.0f : -1.0f;
+        }
+        double sin = Math.sin(Math.toRadians(yaw + 90.0f));
+        double cos = Math.cos(Math.toRadians(yaw + 90.0f));
+        double posX = forward * speed * cos + side * speed * sin;
+        double posZ = forward * speed * sin - side * speed * cos;
+        return new double[]{posX, posZ};
     }
 }
