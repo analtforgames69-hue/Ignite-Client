@@ -1,6 +1,7 @@
 package me.alpha432.oyvey.features.gui.items.buttons;
 
 import me.alpha432.oyvey.features.modules.combat.Killaura;
+import me.alpha432.oyvey.features.gui.items.Item;
 import me.alpha432.oyvey.util.render.RenderUtil;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.sound.PositionedSoundInstance;
@@ -23,24 +24,25 @@ public class EntityListButton extends Button {
 
         // Draw the main button
         RenderUtil.rect(context.getMatrices(),
-                this.x, this.y,
-                this.x + (float) this.width,
-                this.y + (float) this.height - 0.5f,
+                this.getX(), this.getY(),
+                this.getX() + (float) this.getWidth(),
+                this.getY() + (float) this.getHeight() - 0.5f,
                 this.isHovering(mouseX, mouseY) ? 0x77111111 : 0x55111111);
 
-        drawString(this.getName(), this.x + 2.3f, this.y - 2.0f, -1);
+        drawString(this.getName(), this.getX() + 2.3f, this.getY() - 2.0f, -1);
 
         // Draw extended list
         if (extended) {
-            List<BooleanButton> buttons = module.getEntityButtons();
-            float offsetY = this.y + this.height;
+            List<BooleanButton> btns = module.getEntityButtons();
+            float offsetY = this.getY() + this.getHeight();
 
-            for (BooleanButton btn : buttons) {
+            for (BooleanButton btn : btns) {
 
-                // Button uses direct fields, not setters
-                btn.x = this.x;
-                btn.y = offsetY;
-                btn.width = this.width;
+                // FIXED — uses setLocation() from Item.java
+                btn.setLocation(this.getX(), offsetY);
+
+                // width must be set through setter (exists)
+                btn.setWidth(this.getWidth());
 
                 btn.drawScreen(context, mouseX, mouseY, partialTicks);
 
@@ -69,11 +71,13 @@ public class EntityListButton extends Button {
     @Override
     public int getHeight() {
         int h = 14;
+
         if (extended) {
             for (BooleanButton btn : module.getEntityButtons()) {
                 h += btn.getHeight();
             }
         }
+
         return h;
     }
 }
