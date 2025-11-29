@@ -6,6 +6,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.client.util.InputUtil;
+import net.minecraft.util.math.MathHelper;
 import org.lwjgl.glfw.GLFW;
 
 public class Killaura extends Module {
@@ -50,7 +51,7 @@ public class Killaura extends Module {
         double shortestDistance = range;
 
         for (Entity entity : mc.world.getEntities()) {
-            if (entity instanceof LivingEntity && entity != mc.player && mc.player.distanceTo(entity) <= range && !entity.isDead()) {
+            if (entity instanceof LivingEntity && entity != mc.player && mc.player.distanceTo(entity) <= range && !entity.isRemoved()) {
                 double dist = mc.player.distanceTo(entity);
                 if (dist < shortestDistance) {
                     shortestDistance = dist;
