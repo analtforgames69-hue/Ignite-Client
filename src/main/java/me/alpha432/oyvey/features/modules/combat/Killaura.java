@@ -14,16 +14,20 @@ public class Killaura extends Module {
     public Setting<Boolean> targetPhantoms;
 
     private final List<BooleanButton> entityButtons = new ArrayList<>();
-    public final EntityListButton entityListButton;
+    public EntityListButton entityListButton;
 
     public Killaura() {
-        super("Killaura", "Automatically attacks entities around you", Category.COMBAT);
+        super("Killaura", 
+              "Automatically attacks entities around you",
+              Category.COMBAT,
+              false, false, false);  // REQUIRED by Module constructor
 
         targetPlayers = register(new Setting<>("Players", true));
         targetPhantoms = register(new Setting<>("Phantoms", false));
 
-        entityButtons.add(new BooleanButton("Players", targetPlayers));
-        entityButtons.add(new BooleanButton("Phantoms", targetPhantoms));
+        // FIXED — BooleanButton only accepts Setting<Boolean>
+        entityButtons.add(new BooleanButton(targetPlayers));
+        entityButtons.add(new BooleanButton(targetPhantoms));
 
         this.entityListButton = new EntityListButton("Target Entities", this);
     }
