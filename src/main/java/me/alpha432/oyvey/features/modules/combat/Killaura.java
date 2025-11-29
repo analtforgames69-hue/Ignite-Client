@@ -1,109 +1,74 @@
 package me.alpha432.oyvey.features.modules.combat;
 
+import me.alpha432.oyvey.OyVey;
+import me.alpha432.oyvey.event.events.UpdateWalkingPlayerEvent;
 import me.alpha432.oyvey.features.modules.Module;
 import me.alpha432.oyvey.features.settings.Setting;
 import me.alpha432.oyvey.features.settings.Bind;
 import me.alpha432.oyvey.features.gui.items.buttons.BindButton;
-import net.minecraft.entity.Entity;
+import me.alpha432.oyvey.util.EntityUtil;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.mob.PhantomEntity;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.world.World;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.Hand;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.util.hit.HitResult;
 
 import java.util.List;
 
 public class Killaura extends Module {
+    public Setting<Bind> keyBind = this.register(new Setting<>("Keybind", new Bind(-1)));
+    public BindButton bindButton;
 
-    public Setting<Bind> bind = register(new Setting<>("Keybind", new Bind(-1)));
-    public Setting<TargetMode> targetMode = register(new Setting<>("Target", TargetMode.Players));
-    public Setting<Float> rotationSpeed = register(new Setting<>("Speed", 10f, 1f, 20f));
-
-    private BindButton bindButton;
+    private String targetEntity = "Player"; // default
+    private LivingEntity target;
 
     public Killaura() {
-        super("Killaura", "Automatically attacks nearby entities", Category.COMBAT, true, false, false);
-        bindButton = new BindButton(bind);
-    }
-
-    public enum TargetMode {
-        Players,
-        Phantoms
+        super("Killaura", "Automatically attacks entities", Category.COMBAT, true, false, false);
+        bindButton = new BindButton(keyBind); // properly use Setting<Bind>
     }
 
     @Override
     public void onUpdate() {
-        if (!this.isEnabled()) return;
-
-        ClientPlayerEntity player = MinecraftClient.getInstance().player;
-        World world = MinecraftClient.getInstance().world;
-
-        if (player == null || world == null) return;
-
-        // Only attack when attack cooldown is full
-        if (player.getAttackCooldownProgress(0f) < 1.0f) return;
-
-        List<Entity> entities = world.getEntitiesByClass(Entity.class, new Box(
-                player.getX() - 4, player.getY() - 4, player.getZ() - 4,
-                player.getX() + 4, player.getY() + 4, player.getZ() + 4),
-                e -> e != player && isValidTarget(e)
-        );
-
-        for (Entity target : entities) {
-            lookAtEntitySmooth(player, target, rotationSpeed.getValue());
-            attack(target, player);
+        findTarget();
+        if (target != null && mc.player.getAttackCooldownProgress(0f) >= 1.0f) {
+            attackTarget(target);
+            smoothLookAt(target);
         }
     }
 
-    private boolean isValidTarget(Entity entity) {
-        switch (targetMode.getValue()) {
-            case Players:
-                return entity instanceof PlayerEntity;
-            case Phantoms:
-                return entity instanceof PhantomEntity;
-        }
-        return false;
+    private void findTarget() {
+        List<LivingEntity> entities = mc.world.getEntitiesByClass(LivingEntity.class, mc.player.getBoundingBox().expand(6), e -> !e.isDead() && e.isAlive());
+        target = entities.stream()
+                .filter(e -> {
+                    if (targetEntity.equals("Player") && e instanceof PlayerEntity) return true;
+                    if (targetEntity.equals("Phantom") && e.getType().toString().contains("phantom")) return true;
+                    return false;
+                })
+                .findFirst().orElse(null);
     }
 
-    private void attack(Entity target, ClientPlayerEntity player) {
-        player.attack(target);
-        player.swingHand(Hand.MAIN_HAND);
+    private void attackTarget(LivingEntity entity) {
+        mc.player.attack(entity);
+        mc.player.swingHand(mc.player.getActiveHand());
     }
 
-    private void lookAtEntitySmooth(ClientPlayerEntity player, Entity target, float speed) {
-        Vec3d diff = new Vec3d(
-                target.getX() - player.getX(),
-                (target.getY() + target.getEyeHeight()) - (player.getY() + player.getEyeHeight()),
-                target.getZ() - player.getZ()
-        );
+    private void smoothLookAt(LivingEntity entity) {
+        double dx = entity.getX() - mc.player.getX();
+        double dy = entity.getY() + entity.getEyeHeight(mc.player.getPose()) - (mc.player.getY() + mc.player.getEyeHeight(mc.player.getPose()));
+        double dz = entity.getZ() - mc.player.getZ();
+        double distance = Math.sqrt(dx*dx + dz*dz);
 
-        double distanceXZ = Math.sqrt(diff.x * diff.x + diff.z * diff.z);
-        float targetYaw = (float) Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90f;
-        float targetPitch = (float) -Math.toDegrees(Math.atan2(diff.y, distanceXZ));
+        float yaw = (float) Math.toDegrees(Math.atan2(dz, dx)) - 90f;
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, distance));
 
-        // Smoothly interpolate yaw and pitch
-        player.yaw = interpolateRotation(player.yaw, targetYaw, speed);
-        player.pitch = interpolateRotation(player.pitch, targetPitch, speed);
+        mc.player.setYaw(mc.player.getYaw() + (yaw - mc.player.getYaw()) * 0.3f); // smooth factor
+        mc.player.setPitch(mc.player.getPitch() + (pitch - mc.player.getPitch()) * 0.3f);
     }
 
-    private float interpolateRotation(float current, float target, float speed) {
-        float delta = wrapDegrees(target - current);
-        if (delta > speed) delta = speed;
-        if (delta < -speed) delta = -speed;
-        return current + delta;
+    public void setTargetEntity(String entity) {
+        this.targetEntity = entity;
     }
 
-    private float wrapDegrees(float value) {
-        value %= 360.0F;
-        if (value >= 180.0F) value -= 360.0F;
-        if (value < -180.0F) value += 360.0F;
-        return value;
-    }
-
-    public BindButton getBindButton() {
-        return bindButton;
+    public void disableKillaura() {
+        target = null;
+        this.disable();
     }
 }
