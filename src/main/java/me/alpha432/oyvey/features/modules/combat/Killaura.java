@@ -1,17 +1,16 @@
 package me.alpha432.oyvey.features.modules.combat;
-
-import me.alpha432.oyvey.features.modules.Module;
-import me.alpha432.oyvey.features.gui.KillauraEntitySelectorGUI;
+import net.fabricmc.api.EnvType;
+import net.fabricmc.api.Environment;
+import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.Minecraft;
 
 @Environment(EnvType.CLIENT)
 public class Killaura extends Module {
 
-    private final Minecraft mc = Minecraft.getInstance();
+    private final MinecraftClient mc = MinecraftClient.getInstance();
     private final KillauraEntitySelectorGUI selectorGUI = new KillauraEntitySelectorGUI();
     private float rotationSpeed = 10.0f; // degrees per tick
 
