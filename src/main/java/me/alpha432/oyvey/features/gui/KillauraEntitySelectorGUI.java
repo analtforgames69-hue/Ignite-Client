@@ -5,6 +5,7 @@ import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.text.Text;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -40,17 +41,17 @@ public class KillauraEntitySelectorGUI {
                 .toList();
     }
 
-    public void render(MatrixStack matrices, int mouseX, int mouseY) {
-        int y = 20;
-        mc.textRenderer.draw(matrices, "Search: " + searchQuery, 10, 10, 0xFFFFFF);
+  public void render(MatrixStack matrices, int mouseX, int mouseY) {
+    int y = 20;
+    mc.textRenderer.draw(matrices, Text.of("Search: " + searchQuery), 10f, 10f, 0xFFFFFF);
 
-        for (TargetType type : getVisibleTargets()) {
-            boolean enabled = isEnabled(type);
-            String label = (enabled ? "[X] " : "[ ] ") + type.name();
-            mc.textRenderer.draw(matrices, label, 10, y, 0xFFFFFF);
-            y += 12;
-        }
+    for (TargetType type : getVisibleTargets()) {
+        boolean enabled = isEnabled(type);
+        String labelStr = (enabled ? "[X] " : "[ ] ") + type.name();
+        mc.textRenderer.draw(matrices, Text.of(labelStr), 10f, (float)y, 0xFFFFFF);
+        y += 12;
     }
+}
 
     public void handleClick(double mouseX, double mouseY) {
         int y = 20;
