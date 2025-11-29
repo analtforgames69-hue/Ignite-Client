@@ -73,6 +73,34 @@ public class InteractionUtil implements Util {
         return place(pos, airPlace, Hand.MAIN_HAND);
     }
 
+    public class Timer {
+
+    private long lastMS;
+
+    public Timer() {
+        this.lastMS = System.currentTimeMillis();
+    }
+
+    /**
+     * Checks if the specified milliseconds have passed since the last reset.
+     * @param milliseconds The amount of time to check
+     * @return true if the time has passed, false otherwise
+     */
+    public boolean hasPassed(long milliseconds) {
+        return System.currentTimeMillis() - this.lastMS >= milliseconds;
+    }
+
+    /** Resets the timer to the current time. */
+    public void reset() {
+        this.lastMS = System.currentTimeMillis();
+    }
+
+    /** Returns the number of milliseconds that have passed since the last reset. */
+    public long getPassedTimeMs() {
+        return System.currentTimeMillis() - this.lastMS;
+    }
+}
+
     public static boolean place(BlockPos pos, boolean airPlace, Hand hand) {
         if (mc.world == null || mc.player == null || mc.interactionManager == null) return false;
         if (!isPlaceable(pos, false)) return false;
