@@ -63,4 +63,4 @@ public void onInitializeClient() {
 
     Runtime.getRuntime().addShutdownHook(new Thread(() -> configManager.save()));
 }
-
+}
