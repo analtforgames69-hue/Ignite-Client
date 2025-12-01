@@ -1,79 +1,63 @@
 package me.alpha432.oyvey.features.modules.combat;
 
-import me.alpha432.oyvey.features.modules.Module;
 import me.alpha432.oyvey.features.gui.KillauraEntitySelectorGUI;
-
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-
+import me.alpha432.oyvey.features.modules.Module;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.commands.arguments.EntityAnchorArgument.Anchor;
 
-import net.minecraft.world.InteractionHand;
-
-import java.util.List;
-
-@Environment(EnvType.CLIENT)
 public class Killaura extends Module {
 
     private final Minecraft mc = Minecraft.getInstance();
-    public KillauraEntitySelectorGUI selectorGUI;
+    private boolean enabled = false;
+    private final KillauraEntitySelectorGUI gui = new KillauraEntitySelectorGUI();
 
     public Killaura() {
-        super("Killaura", "Attacks entities automatically", Category.COMBAT);
-        selectorGUI = new KillauraEntitySelectorGUI();
+        super("Killaura", "Automatically attacks nearby entities", Category.COMBAT, true, false, false);
     }
 
     @Override
     public void onTick() {
-        if (mc.player == null || mc.level == null) return;
-        if (!mc.player.isAlive()) return;
+        if (!enabled || mc.player == null || mc.level == null) return;
+        doKillaura();
+    }
 
-        // Find targets in a 4-block radius (adjust)
-        List<LivingEntity> targets = mc.level.getEntitiesOfClass(
-                LivingEntity.class,
-                mc.player.getBoundingBox().inflate(4),
-                e -> e != mc.player && e.isAlive() && isValidTarget(e)
-        );
+    private void doKillaura() {
+        for (Entity entity : mc.level.entitiesForRendering()) {
+            if (!(entity instanceof LivingEntity living)) continue;
+            if (entity == mc.player) continue;
+            if (!gui.isValidTarget(living)) continue;
 
-        for (LivingEntity target : targets) {
-            attackEntity(target);
+            // Attack only when attack cooldown is full
+            if (mc.player.getAttackStrengthScale(0.5F) >= 1.0F) {
+                rotateTo(living);
+                mc.player.swing(InteractionHand.MAIN_HAND);
+                mc.player.attack(living);
+            }
         }
     }
 
-    private boolean isValidTarget(Entity entity) {
-        if (!(entity instanceof LivingEntity)) return false;
+    private void rotateTo(Entity entity) {
+        var eyePos = mc.player.getEyePosition(1.0F);
+        var targetPos = entity.position().add(0, entity.getBbHeight() / 2, 0);
+        var diff = targetPos.subtract(eyePos);
 
-        String id = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()).getPath();
+        float yaw = (float) Math.toDegrees(Math.atan2(diff.z, diff.x)) - 90;
+        float pitch = (float) -Math.toDegrees(Math.atan2(diff.y, Math.sqrt(diff.x * diff.x + diff.z * diff.z)));
 
-        if (entity instanceof Player && !selectorGUI.isEnabled(TargetType.PLAYER))
-            return false;
-
-        if (id.contains("zombie") || id.contains("skeleton") || id.contains("monster")) {
-            if (!selectorGUI.isEnabled(TargetType.MOB)) return false;
-        }
-
-        if (id.contains("cow") || id.contains("pig") || id.contains("animal")) {
-            if (!selectorGUI.isEnabled(TargetType.ANIMAL)) return false;
-        }
-
-        return true;
+        mc.player.yRot = yaw;
+        mc.player.xRot = pitch;
     }
 
-    private void attackEntity(LivingEntity entity) {
-        if (mc.player == null || mc.gameMode == null) return;
+    // GUI access
+    public KillauraEntitySelectorGUI getGui() {
+        return gui;
+    }
 
-        // Face target
-        mc.player.lookAt(Anchor.EYES, entity.position());
-
-        // Swing main hand
-        mc.player.swing(InteractionHand.MAIN_HAND);
-
-        // Attack!
-        mc.gameMode.attack(mc.player, entity);
+    // Toggle the module
+    public void toggle() {
+        enabled = !enabled;
     }
 }
