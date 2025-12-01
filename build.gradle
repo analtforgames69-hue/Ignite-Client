@@ -22,15 +22,15 @@ def fabricApiVersionForMinecraft(String mcVersion) {
     return "0.121.0+1.21.5" // fallback
 }
 
-
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
     mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-    // Fabric API dynamically resolved per MC version
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabricApiVersionForMinecraft(project.minecraft_version)}"
+    // Use a 1.21.5-compatible Fabric API version
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 }
+
 
 processResources {
     inputs.property "version", project.version
