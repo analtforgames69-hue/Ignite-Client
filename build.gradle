@@ -16,10 +16,12 @@ loom {
 
 // --- Multiversion dependency resolution ---
 def fabricApiVersionForMinecraft(String mcVersion) {
+    if (mcVersion.startsWith("1.21.5")) return "0.121.0+1.21.5"
+    if (mcVersion.startsWith("1.21.4")) return "0.120.0+1.21.4"
     if (mcVersion.startsWith("1.20")) return "0.91.0+1.20.2"
-    if (mcVersion.startsWith("1.21")) return "0.102.0+1.21.5"
-    return "0.102.0+1.21.5" // fallback
+    return "0.121.0+1.21.5" // fallback
 }
+
 
 dependencies {
     minecraft "com.mojang:minecraft:${project.minecraft_version}"
