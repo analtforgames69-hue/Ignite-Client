@@ -1,56 +1,59 @@
 package me.alpha432.oyvey.features.modules.player;
 
 import me.alpha432.oyvey.features.modules.Module;
-import me.alpha432.oyvey.mixin.PlayerInventoryAccessor;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.item.ItemStack;
+import me.alpha432.oyvey.features.modules.Module.Category;
+import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.item.Items;
+import net.minecraft.item.ItemStack;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
 
 public class WaterClutch extends Module {
 
     private int previousSlot = -1;
 
     public WaterClutch() {
-        super("WaterClutch", "Automatically places water to avoid fall damage", Category.PLAYER, true, false, false);
+        super("WaterClutch", "Automatically places water to prevent fall damage", Category.PLAYER, true, false, false);
     }
 
     @Override
     public void onUpdate() {
-        if (mc.player.isOnGround()) {
-            previousSlot = -1; // reset
-            return;
-        }
+        ClientPlayerEntity player = mc.player;
 
-        // Find water bucket in hotbar
-        int waterSlot = -1;
-        for (int i = 0; i < 9; i++) {
-            ItemStack stack = mc.player.getInventory().getStack(i);
+        if (player == null) return;
+
+        // Only trigger if falling 4+ blocks
+        if (!player.isOnGround() && player.fallDistance > 4) {
+            // Find water bucket in hotbar
+            int waterSlot = findWaterBucketSlot(player);
+            if (waterSlot == -1) return; // No bucket found
+
+            // Remember previous slot
+            if (previousSlot == -1) previousSlot = player.getInventory().selectedSlot;
+
+            // Switch to bucket
+            player.getInventory().selectedSlot = waterSlot;
+
+            // Rotate head to look down 90 degrees in third-person
+            player.pitch = 90f; // Look straight down
+            player.prevPitch = 90f;
+
+            // Use bucket
+            ItemStack stack = player.getStackInHand(Hand.MAIN_HAND);
             if (stack.getItem() == Items.WATER_BUCKET) {
-                waterSlot = i;
-                break;
+                mc.interactionManager.interactItem(player, Hand.MAIN_HAND);
             }
+
+            // Restore previous slot
+            player.getInventory().selectedSlot = previousSlot;
+            previousSlot = -1;
         }
+    }
 
-        if (waterSlot == -1) return; // no water bucket, do nothing
-
-        // Save previous slot
-        if (previousSlot == -1) previousSlot = ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot();
-
-        // Switch to water bucket
-        ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(waterSlot);
-
-        // Place water below player
-        BlockPos posBelow = mc.player.getBlockPos().down();
-        BlockHitResult blockHit = new BlockHitResult(mc.player.getPos(), Direction.UP, posBelow, false);
-        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, blockHit);
-
-        // Switch back to previous slot
-        ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(previousSlot);
-        previousSlot = -1;
+    private int findWaterBucketSlot(ClientPlayerEntity player) {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = player.getInventory().getStack(i);
+            if (stack.getItem() == Items.WATER_BUCKET) return i;
+        }
+        return -1;
     }
 }
