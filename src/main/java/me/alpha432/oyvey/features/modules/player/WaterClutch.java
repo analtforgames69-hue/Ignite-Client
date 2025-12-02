@@ -39,24 +39,22 @@ public class WaterClutch extends Module {
         if (fallDistance >= 4f) {
             int waterSlot = findWaterBucketSlot();
             if (waterSlot == -1) return;
-            previousSlot = mc.player.getInventory().selectedSlot;
+
+            // Save current slot using packet (no access to selectedSlot)
+            previousSlot = mc.player.getInventory().selectedSlot; // just for our memory, won't assign
             swapHotbarSlot(waterSlot);
 
             mc.player.setPitch(90f);
 
-            mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, new BlockHitResult(
-                    mc.player.getPos(),
-                    Direction.UP,
-                    below,
-                    false
-            ));
+            mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND,
+                    new BlockHitResult(mc.player.getPos(), Direction.UP, below, false));
 
             placedWater = true;
         }
     }
 
     private void swapHotbarSlot(int slot) {
-        mc.player.getInventory().selectedSlot = slot;
+        // Send packet to server to change selected slot
         mc.player.networkHandler.sendPacket(new UpdateSelectedSlotC2SPacket(slot));
     }
 
