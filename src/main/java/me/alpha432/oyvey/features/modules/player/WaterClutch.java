@@ -1,23 +1,23 @@
 package me.alpha432.oyvey.features.modules.player;
 
 import me.alpha432.oyvey.features.modules.Module;
-import me.alpha432.oyvey.mixin.PlayerInventoryAccessor;
+import me.alpha432.oyvey.mixin.ClientPlayerEntityAccessor;
 import net.minecraft.item.Items;
 import net.minecraft.util.Hand;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.math.BlockPos;
 
 public class WaterClutch extends Module {
-
     private int previousSlot = -1;
 
+    // Optional: store previous rotation to restore
+    private float previousPitch, previousYaw;
+
     public WaterClutch() {
-        super("WaterClutch", "Automatically places water when falling", Category.PLAYER, true, false, false);
+        super("WaterClutch", "Automatically places water to clutch", Category.PLAYER, true, false, false);
     }
 
     @Override
     public void onUpdate() {
-        if (mc.player == null || mc.world == null) return;
+        if (mc.player == null) return;
 
         // Find water bucket in hotbar
         int waterSlot = -1;
@@ -27,26 +27,32 @@ public class WaterClutch extends Module {
                 break;
             }
         }
+        if (waterSlot == -1) return;
 
-        if (waterSlot == -1) return; // No water bucket, do nothing
-
-        // Rotate head down in third person
-        mc.player.pitch = 90f;
-
-        // Save current slot
+        // Save previous slot and rotation
         if (previousSlot == -1) {
-            previousSlot = ((PlayerInventoryAccessor) mc.player.getInventory()).getSelectedSlot();
+            previousSlot = mc.player.getInventory().selectedSlot;
+            previousPitch = mc.player.getPitch();
+            previousYaw = mc.player.getYaw();
         }
 
-        // Switch to water bucket
-        ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(waterSlot);
+        // Select water bucket
+        mc.player.getInventory().selectedSlot = waterSlot;
 
-        // Place water down
-        BlockPos pos = mc.player.getBlockPos().down();
-        mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND, new BlockHitResult(mc.player.getPos(), mc.player.getHorizontalFacing(), pos, false));
+        // Turn head straight down (pitch 90) and forward (yaw unchanged, or set to something)
+        ClientPlayerEntityAccessor accessor = (ClientPlayerEntityAccessor) mc.player;
+        accessor.setPitch(90f);  // look straight down
+        accessor.setYaw(previousYaw); // keep current yaw, or you could force a specific yaw
 
-        // Switch back
-        ((PlayerInventoryAccessor) mc.player.getInventory()).setSelectedSlot(previousSlot);
+        // Place water
+        mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
+
+        // Restore previous rotation
+        accessor.setPitch(previousPitch);
+        accessor.setYaw(previousYaw);
+
+        // Restore previous slot
+        mc.player.getInventory().selectedSlot = previousSlot;
         previousSlot = -1;
     }
 }
