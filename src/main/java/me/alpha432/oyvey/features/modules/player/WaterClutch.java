@@ -1,10 +1,11 @@
 package me.alpha432.oyvey.features.modules.player;
 
-import me.alpha432.oyvey.event.impl.Render2DEvent;
+import me.alpha432.oyvey.OyVey;
 import me.alpha432.oyvey.features.modules.Module;
-import me.alpha432.oyvey.mixin.PlayerInventoryAccessor;
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.Items;
+import net.minecraft.item.ItemStack;
+import net.minecraft.util.Hand;
+import net.minecraft.client.util.InputUtil;
 
 public class WaterClutch extends Module {
 
@@ -15,39 +16,37 @@ public class WaterClutch extends Module {
     }
 
     @Override
-    public void onTick() {
-        MinecraftClient mc = MinecraftClient.getInstance();
-        if (mc.player == null || mc.world == null) return;
+    public void onUpdate() {
+        // Only work when player is falling
+        if (!mc.player.isOnGround() && OyVey.positionManager.getFallDistance() > 4) {
+            int waterSlot = findWaterBucket();
 
-        if (!mc.player.isOnGround() && mc.player.fallDistance > 4.0f) {
+            if (waterSlot == -1) return; // No water bucket found
 
-            // Find water bucket in hotbar
-            int waterSlot = -1;
-            for (int i = 0; i < 9; i++) {
-                if (mc.player.getInventory().getStack(i).getItem() == Items.WATER_BUCKET) {
-                    waterSlot = i;
-                    break;
-                }
-            }
-
-            if (waterSlot == -1) return; // No water bucket
-
-            PlayerInventoryAccessor inv = (PlayerInventoryAccessor) mc.player.getInventory();
-
-            // Save previous slot
-            if (previousSlot == -1) previousSlot = inv.getSelectedSlot();
+            // Remember previous slot
+            if (previousSlot == -1) previousSlot = mc.player.getInventory().selectedSlot;
 
             // Switch to water bucket
-            inv.setSelectedSlot(waterSlot);
+            mc.player.getInventory().selectedSlot = waterSlot;
+            mc.player.updateSelectedSlot();
 
-            // Use water bucket
-            mc.interactionManager.interactItem(mc.player, mc.player.getActiveHand());
+            // Place water
+            mc.interactionManager.interactBlock(mc.player, Hand.MAIN_HAND);
 
-            // Switch back
+            // Switch back to previous slot
             if (previousSlot != -1) {
-                inv.setSelectedSlot(previousSlot);
+                mc.player.getInventory().selectedSlot = previousSlot;
+                mc.player.updateSelectedSlot();
                 previousSlot = -1;
             }
         }
+    }
+
+    private int findWaterBucket() {
+        for (int i = 0; i < 9; i++) {
+            ItemStack stack = mc.player.getInventory().getStack(i);
+            if (stack.getItem() == Items.WATER_BUCKET) return i;
+        }
+        return -1;
     }
 }
