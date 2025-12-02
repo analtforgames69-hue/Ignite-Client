@@ -1,55 +1,53 @@
 package me.alpha432.oyvey.features.modules.player;
 
+import me.alpha432.oyvey.event.impl.Render2DEvent;
 import me.alpha432.oyvey.features.modules.Module;
+import me.alpha432.oyvey.mixin.PlayerInventoryAccessor;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.item.Items;
-import net.minecraft.util.Hand;
 
 public class WaterClutch extends Module {
-    private final MinecraftClient mc = MinecraftClient.getInstance();
+
     private int previousSlot = -1;
-    private boolean clutching = false;
 
     public WaterClutch() {
-        super("WaterClutch", "Automatically places water to avoid fall damage", Category.PLAYER, true, false, false);
+        super("WaterClutch", "Automatically places water when falling", Category.PLAYER, true, false, false);
     }
 
     @Override
-    public void onUpdate() {
+    public void onTick() {
+        MinecraftClient mc = MinecraftClient.getInstance();
         if (mc.player == null || mc.world == null) return;
 
-        // Only trigger if falling from height
-        if (mc.player.fallDistance > 3.0f && !mc.player.isOnGround()) {
-            int waterSlot = findWaterBucket();
-            if (waterSlot != -1) {
-                // Save previous slot
-                if (previousSlot == -1) previousSlot = mc.player.getInventory().selectedSlot;
+        if (!mc.player.isOnGround() && mc.player.fallDistance > 4.0f) {
 
-                // Switch to water bucket
-                mc.player.getInventory().selectedSlot = waterSlot;
-
-                // Use water bucket
-                mc.interactionManager.interactItem(mc.player, Hand.MAIN_HAND);
-
-                clutching = true;
+            // Find water bucket in hotbar
+            int waterSlot = -1;
+            for (int i = 0; i < 9; i++) {
+                if (mc.player.getInventory().getStack(i).getItem() == Items.WATER_BUCKET) {
+                    waterSlot = i;
+                    break;
+                }
             }
-        } else if (clutching) {
-            // Restore previous slot after clutch
-            if (previousSlot != -1) mc.player.getInventory().selectedSlot = previousSlot;
-            previousSlot = -1;
-            clutching = false;
-        }
-    }
 
-    /**
-     * Finds the first water bucket in the hotbar (slots 0-8)
-     */
-    private int findWaterBucket() {
-        for (int i = 0; i < 9; i++) {
-            if (mc.player.getInventory().getStack(i).getItem() == Items.WATER_BUCKET) {
-                return i;
+            if (waterSlot == -1) return; // No water bucket
+
+            PlayerInventoryAccessor inv = (PlayerInventoryAccessor) mc.player.getInventory();
+
+            // Save previous slot
+            if (previousSlot == -1) previousSlot = inv.getSelectedSlot();
+
+            // Switch to water bucket
+            inv.setSelectedSlot(waterSlot);
+
+            // Use water bucket
+            mc.interactionManager.interactItem(mc.player, mc.player.getActiveHand());
+
+            // Switch back
+            if (previousSlot != -1) {
+                inv.setSelectedSlot(previousSlot);
+                previousSlot = -1;
             }
         }
-        return -1; // Not found
     }
 }
